@@ -72,6 +72,10 @@
   .firmware-pill span { display: block; margin-bottom: 6px; color: var(--muted); font-size: 11px;
                         text-transform: uppercase; letter-spacing: 0.16em; }
   .firmware-pill strong { display: block; font-family: "IBM Plex Mono", monospace; font-size: 13px; word-break: break-all; }
+  .firmware-select { display: grid; gap: 8px; }
+  .firmware-select span { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; }
+  .firmware-select select { width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line);
+                            background: rgba(255, 255, 255, 0.03); color: var(--text); font: inherit; }
   .actions { display: flex; gap: 12px; flex-wrap: wrap; }
   .button { appearance: none; border: 0; padding: 13px 18px; border-radius: 14px; font: inherit; cursor: pointer;
             transition: transform 160ms ease, opacity 160ms ease; }
@@ -112,15 +116,18 @@
     <div class="panel">
       <div class="panel__body">
         <div class="step"><span class="step__no">1</span>选择固件</div>
+        <div class="firmware-select" id="fwSelectWrap" hidden>
+          <span>固件版本</span>
+          <select id="fwSelect"></select>
+        </div>
         <label class="dropzone" id="drop">
           <input type="file" id="file" accept=".bin" />
           <div class="dropzone__inner">
             <div class="dropzone__icon">⌁</div>
-            <p class="dropzone__headline">点击或拖入 .bin 固件</p>
-            <p class="muted">仅接受 .bin 文件</p>
+            <p class="dropzone__headline">点击或拖入自定义 .bin</p>
+            <p class="muted">默认加载上方最新固件，也可拖入自有固件</p>
           </div>
         </label>
-        <button id="useBundled" class="button button--ghost" hidden>使用最新内置固件</button>
         <div class="firmware-pill"><span>当前固件</span><strong id="fwInfo">未选择固件</strong></div>
       </div>
     </div>
@@ -199,16 +206,31 @@ if (!('serial' in navigator)) {
     if (f) setImage(new Uint8Array(await f.arrayBuffer()), f.name);
   });
 
-  // 同目录存在 firmware.bin 时提供一键内置固件。
-  fetch('./firmware.bin', { method: 'HEAD' }).then((r) => {
-    if (!r.ok) return;
-    const btn = $('useBundled');
-    btn.hidden = false;
-    btn.addEventListener('click', async () => {
-      const buf = await (await fetch('./firmware.bin')).arrayBuffer();
-      setImage(new Uint8Array(buf), 'firmware.bin（内置）');
-    });
-  }).catch(() => {});
+  // 从 firmware/manifest.json 加载版本列表，自动选中并加载最新固件（数组首项=最新）。
+  (async () => {
+    try {
+      const r = await fetch('./firmware/manifest.json', { cache: 'no-store' });
+      if (!r.ok) return;
+      const versions = (await r.json()).versions || [];
+      if (!versions.length) return;
+      const sel = $('fwSelect');
+      versions.forEach((v, i) => {
+        const o = document.createElement('option');
+        o.value = v.file;
+        o.dataset.label = v.version;
+        o.textContent = v.version + (i === 0 ? ' (最新)' : '') + (v.date ? ' · ' + v.date : '');
+        sel.appendChild(o);
+      });
+      $('fwSelectWrap').hidden = false;
+      const load = async (o) => {
+        log('加载固件 ' + o.dataset.label + ' …');
+        const buf = await (await fetch('./firmware/' + o.value, { cache: 'no-store' })).arrayBuffer();
+        setImage(new Uint8Array(buf), o.dataset.label + '（' + o.value + '）');
+      };
+      sel.addEventListener('change', () => load(sel.selectedOptions[0]));
+      await load(sel.options[0]);
+    } catch {}
+  })();
 
   $('enter').addEventListener('click', async () => {
     try {

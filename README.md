@@ -13,7 +13,7 @@
 
 ## 升级流程
 
-1. 选择固件 `.bin`（或“使用最新内置固件”，若仓库根目录附带了 `firmware.bin`）
+1. 选择固件版本（默认自动加载最新固件，可用下拉框切换历史版本），或拖入自定义 `.bin`
 2. 设备正常运行时点“连接并进入升级模式”，选普通串口 → 设备重启进 bootloader
 3. 设备重新枚举后点“开始刷写”，再次选择设备端口 → 自动 擦除 / 写入 / CRC 校验 / 复位
 
@@ -22,11 +22,24 @@
 
 ## 部署
 
-推送到 `main` 后，`.github/workflows/pages.yml` 会自动把仓库根目录发布为 Pages 站点
-（workflow 中 `enablement: true` 会自动开启 Pages）。若未自动生效，到
-**Settings → Pages → Source** 选 **GitHub Actions**。
+推送到 `main` 后，`.github/workflows/pages.yml` 会把仓库根目录发布为 Pages 站点。
+首次需到 **Settings → Pages → Build and deployment → Source** 选 **GitHub Actions**。
 
-更新固件：把新的 `firmware.bin` 放到仓库根目录提交即可，页面会自动检测并显示“使用内置固件”。
+## 固件版本管理
+
+固件放在 `firmware/` 目录，清单 `firmware/manifest.json` 描述版本列表：
+
+```json
+{
+  "versions": [
+    { "version": "2026.06.01", "file": "firmware-2026.06.01.bin", "date": "2026-06-01", "notes": "..." }
+  ]
+}
+```
+
+- 数组**首项即最新版本**，页面加载时自动选中并加载它，其余作为历史版本供下拉选择。
+- 发布新固件：把 `.bin` 放进 `firmware/`，在 `versions` 数组**开头**新增一条记录，提交推送即可。
+- 用户也可忽略版本列表，直接拖入自有 `.bin`。
 
 ## 本地预览
 

@@ -1,0 +1,10 @@
+{
+  "versions": [
+    {
+      "version": "2026.06.01",
+      "file": "firmware-2026.06.01.bin",
+      "date": "2026-06-01",
+      "notes": "示例固件（复制自 dist/ch32m030/firmware.bin），请替换为正式发布版本"
+    }
+  ]
+}
