@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>烙铁固件在线升级</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, -apple-system, "PingFang SC", sans-serif; max-width: 720px;
+         margin: 0 auto; padding: 24px 16px; line-height: 1.6; }
+  h1 { font-size: 1.4rem; }
+  .card { border: 1px solid #8884; border-radius: 10px; padding: 16px; margin: 14px 0; }
+  .step { font-weight: 600; margin-bottom: 8px; }
+  button { font-size: 1rem; padding: 8px 16px; border-radius: 8px; border: 1px solid #8886;
+           background: #2563eb; color: #fff; cursor: pointer; }
+  button:disabled { background: #8888; cursor: not-allowed; }
+  button.ghost { background: transparent; color: inherit; }
+  #bar { height: 12px; background: #8883; border-radius: 6px; overflow: hidden; margin: 10px 0; }
+  #fill { height: 100%; width: 0; background: #16a34a; transition: width .15s; }
+  #log { white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: .82rem;
+         background: #8881; border-radius: 8px; padding: 10px; max-height: 240px; overflow: auto; }
+  .err { color: #dc2626; }
+  .muted { color: #8889; font-size: .88rem; }
+</style>
+</head>
+<body>
+<h1>烙铁固件在线升级</h1>
+<p class="muted">请使用桌面版 <b>Chrome / Edge</b>，通过数据线连接设备。Safari、Firefox、iOS 不支持。</p>
+
+<div id="unsupported" class="card err" hidden>
+  当前浏览器不支持 Web Serial API，无法升级。请改用桌面版 Chrome 或 Edge。
+</div>
+
+<div id="app" hidden>
+  <div class="card">
+    <div class="step">① 选择固件</div>
+    <input type="file" id="file" accept=".bin" />
+    <button id="useBundled" class="ghost" hidden>使用最新内置固件</button>
+    <div id="fwInfo" class="muted">未选择固件。</div>
+  </div>
+
+  <div class="card">
+    <div class="step">② 进入升级模式（设备正常运行时）</div>
+    <p class="muted">连接设备的普通串口，发送进入升级模式指令。设备会重启并重新枚举。<br>
+       如果设备已经处于升级模式（如开机长按按键进入），可跳过此步。</p>
+    <button id="enter">连接并进入升级模式</button>
+  </div>
+
+  <div class="card">
+    <div class="step">③ 选择设备并刷写</div>
+    <p class="muted">设备重启进入升级模式后，点击下方按钮，在弹窗中选择设备端口开始刷写。</p>
+    <button id="flash" disabled>开始刷写</button>
+    <div id="bar"><div id="fill"></div></div>
+    <div id="pct" class="muted">0%</div>
+  </div>
+
+  <div class="card">
+    <div class="step">日志</div>
+    <div id="log"></div>
+  </div>
+</div>
+
+<script type="module">
+import { requestPort, enterIap, flash } from './iap.js';
+
+const $ = (id) => document.getElementById(id);
+const logEl = $('log');
+let image = null;
+
+function log(msg, isErr = false) {
+  const line = document.createElement('div');
+  line.textContent = msg;
+  if (isErr) line.className = 'err';
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function setProgress(p) {
+  $('fill').style.width = `${(p * 100).toFixed(1)}%`;
+  $('pct').textContent = `${(p * 100).toFixed(1)}%`;
+}
+function setImage(bytes, name) {
+  image = bytes;
+  $('fwInfo').textContent = `已选择：${name}（${bytes.length} 字节）`;
+  $('flash').disabled = false;
+}
+
+if (!('serial' in navigator)) {
+  $('unsupported').hidden = false;
+} else {
+  $('app').hidden = false;
+
+  $('file').addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    setImage(new Uint8Array(await f.arrayBuffer()), f.name);
+  });
+
+  // 若同目录存在 firmware.bin（由部署流程附带），提供一键内置固件。
+  fetch('./firmware.bin', { method: 'HEAD' }).then((r) => {
+    if (r.ok) {
+      const btn = $('useBundled');
+      btn.hidden = false;
+      btn.addEventListener('click', async () => {
+        const buf = await (await fetch('./firmware.bin')).arrayBuffer();
+        setImage(new Uint8Array(buf), 'firmware.bin（内置）');
+      });
+    }
+  }).catch(() => {});
+
+  $('enter').addEventListener('click', async () => {
+    try {
+      const port = await requestPort();
+      await enterIap(port, log);
+      log('请等待几秒，设备重新枚举后再执行第 ③ 步。');
+    } catch (e) {
+      if (e.name !== 'NotFoundError') log('进入升级模式失败：' + e.message, true);
+    }
+  });
+
+  $('flash').addEventListener('click', async () => {
+    if (!image) { log('请先选择固件。', true); return; }
+    $('flash').disabled = true;
+    setProgress(0);
+    try {
+      const port = await requestPort();
+      await flash(port, image, { log, onProgress: setProgress });
+    } catch (e) {
+      if (e.name === 'NotFoundError') log('已取消选择端口。');
+      else log('刷写失败：' + e.message, true);
+    } finally {
+      $('flash').disabled = false;
+    }
+  });
+}
+</script>
+</body>
+</html>
