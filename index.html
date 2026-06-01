@@ -5,58 +5,150 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>烙铁固件在线升级</title>
 <style>
-  :root { color-scheme: light dark; }
-  body { font-family: system-ui, -apple-system, "PingFang SC", sans-serif; max-width: 720px;
-         margin: 0 auto; padding: 24px 16px; line-height: 1.6; }
-  h1 { font-size: 1.4rem; }
-  .card { border: 1px solid #8884; border-radius: 10px; padding: 16px; margin: 14px 0; }
-  .step { font-weight: 600; margin-bottom: 8px; }
-  button { font-size: 1rem; padding: 8px 16px; border-radius: 8px; border: 1px solid #8886;
-           background: #2563eb; color: #fff; cursor: pointer; }
-  button:disabled { background: #8888; cursor: not-allowed; }
-  button.ghost { background: transparent; color: inherit; }
-  #bar { height: 12px; background: #8883; border-radius: 6px; overflow: hidden; margin: 10px 0; }
-  #fill { height: 100%; width: 0; background: #16a34a; transition: width .15s; }
-  #log { white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: .82rem;
-         background: #8881; border-radius: 8px; padding: 10px; max-height: 240px; overflow: auto; }
-  .err { color: #dc2626; }
-  .muted { color: #8889; font-size: .88rem; }
+  :root {
+    color-scheme: dark;
+    font-family: "IBM Plex Sans", "Segoe UI", "PingFang SC", sans-serif;
+    --bg: #0b1016;
+    --panel: rgba(14, 19, 27, 0.94);
+    --panel-strong: rgba(11, 16, 24, 0.98);
+    --line: rgba(255, 255, 255, 0.08);
+    --text: #eef2f6;
+    --muted: #9aa6b8;
+    --accent: #ffb703;
+    --accent-strong: #fb8500;
+    --success: #27d59a;
+    --danger: #ff647c;
+    --shadow: 0 22px 60px rgba(0, 0, 0, 0.36);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    color: var(--text);
+    background:
+      radial-gradient(circle at top left, rgba(255, 183, 3, 0.14), transparent 24%),
+      radial-gradient(circle at bottom right, rgba(251, 133, 0, 0.1), transparent 22%),
+      linear-gradient(180deg, #0d1117 0%, #090c12 100%);
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: linear-gradient(180deg, rgba(255, 255, 255, 0.9), transparent 90%);
+  }
+  .shell { position: relative; max-width: 760px; margin: 0 auto; padding: 28px 18px 40px;
+           display: grid; gap: 16px; }
+  .station-brand, .panel, .support-warning {
+    border: 1px solid var(--line); border-radius: 24px; background: var(--panel); box-shadow: var(--shadow);
+  }
+  .station-brand {
+    padding: 22px 24px;
+    background: linear-gradient(145deg, rgba(255, 183, 3, 0.1), rgba(255, 255, 255, 0.02)), var(--panel-strong);
+  }
+  .station-eyebrow { margin: 0 0 8px; font-size: 12px; text-transform: uppercase;
+                     letter-spacing: 0.2em; color: var(--accent); }
+  .station-brand h1 { margin: 0; font-size: clamp(28px, 4vw, 40px); line-height: 0.98; letter-spacing: -0.04em; }
+  .station-brand p { margin: 10px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .panel__body { padding: 18px 20px; display: grid; gap: 12px; }
+  .step { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -0.02em; }
+  .step__no { width: 26px; height: 26px; border-radius: 9px; display: grid; place-items: center;
+              font-size: 13px; color: #101417; background: linear-gradient(135deg, var(--accent), var(--accent-strong)); }
+  .muted { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0; }
+  .dropzone {
+    padding: 22px; border: 1px dashed rgba(255, 183, 3, 0.42); border-radius: 20px;
+    background: linear-gradient(180deg, rgba(255, 183, 3, 0.12), rgba(255, 255, 255, 0.03)), rgba(255, 255, 255, 0.02);
+    display: grid; place-items: center; text-align: center; cursor: pointer;
+    transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+  }
+  .dropzone:hover, .dropzone.is-over { transform: translateY(-2px); border-color: rgba(255, 183, 3, 0.8); }
+  .dropzone__icon { width: 64px; height: 64px; margin: 0 auto 10px; border-radius: 22px; display: grid;
+                    place-items: center; border: 1px solid rgba(255, 183, 3, 0.3); background: rgba(255, 183, 3, 0.08);
+                    font-family: "IBM Plex Mono", monospace; font-size: 26px; color: var(--accent); }
+  .dropzone__headline { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.03em; }
+  .firmware-pill { border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; background: rgba(255, 255, 255, 0.03); }
+  .firmware-pill span { display: block; margin-bottom: 6px; color: var(--muted); font-size: 11px;
+                        text-transform: uppercase; letter-spacing: 0.16em; }
+  .firmware-pill strong { display: block; font-family: "IBM Plex Mono", monospace; font-size: 13px; word-break: break-all; }
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .button { appearance: none; border: 0; padding: 13px 18px; border-radius: 14px; font: inherit; cursor: pointer;
+            transition: transform 160ms ease, opacity 160ms ease; }
+  .button:hover:not(:disabled) { transform: translateY(-1px); }
+  .button:disabled { opacity: 0.46; cursor: not-allowed; }
+  .button--primary { background: linear-gradient(135deg, var(--accent), var(--accent-strong)); color: #101417; font-weight: 800; }
+  .button--ghost { background: rgba(255, 255, 255, 0.06); color: var(--text); border: 1px solid var(--line); }
+  .progress-track { position: relative; height: 20px; border-radius: 999px; overflow: hidden;
+                    background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); }
+  .progress-fill { position: absolute; inset: 0 auto 0 0; width: 0%; border-radius: inherit;
+                   background: linear-gradient(90deg, var(--accent), var(--accent-strong)); transition: width 180ms ease; }
+  .pct { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+  .log-strip { max-height: 240px; padding: 12px 14px; border-radius: 18px; border: 1px solid var(--line);
+               background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)), #090d12;
+               font-family: "IBM Plex Mono", monospace; font-size: 12px; line-height: 1.55; overflow-y: auto; }
+  .log__line { margin: 0; white-space: pre-wrap; }
+  .log__line + .log__line { margin-top: 4px; }
+  .log__line[data-level="success"] { color: #6af0c5; }
+  .log__line[data-level="error"] { color: #ff8f9f; }
+  .support-warning { padding: 16px 18px; background: rgba(255, 93, 115, 0.08);
+                     border-color: rgba(255, 93, 115, 0.22); color: #ffc5d0; line-height: 1.6; }
+  input[type="file"] { display: none; }
 </style>
 </head>
 <body>
-<h1>烙铁固件在线升级</h1>
-<p class="muted">请使用桌面版 <b>Chrome / Edge</b>，通过数据线连接设备。Safari、Firefox、iOS 不支持。</p>
+<div class="shell">
+  <header class="station-brand">
+    <p class="station-eyebrow">Firmware OTA</p>
+    <h1>烙铁固件在线升级</h1>
+    <p>桌面版 Chrome / Edge · 用数据线连接设备即可在浏览器内升级。Safari、Firefox、iOS 不支持。</p>
+  </header>
 
-<div id="unsupported" class="card err" hidden>
-  当前浏览器不支持 Web Serial API，无法升级。请改用桌面版 Chrome 或 Edge。
-</div>
-
-<div id="app" hidden>
-  <div class="card">
-    <div class="step">① 选择固件</div>
-    <input type="file" id="file" accept=".bin" />
-    <button id="useBundled" class="ghost" hidden>使用最新内置固件</button>
-    <div id="fwInfo" class="muted">未选择固件。</div>
+  <div id="unsupported" class="support-warning" hidden>
+    当前浏览器不支持 Web Serial API，无法升级。请改用桌面版 Chrome 或 Edge。
   </div>
 
-  <div class="card">
-    <div class="step">② 进入升级模式（设备正常运行时）</div>
-    <p class="muted">连接设备的普通串口，发送进入升级模式指令。设备会重启并重新枚举。<br>
-       如果设备已经处于升级模式（如开机长按按键进入），可跳过此步。</p>
-    <button id="enter">连接并进入升级模式</button>
-  </div>
+  <div id="app" hidden>
+    <div class="panel">
+      <div class="panel__body">
+        <div class="step"><span class="step__no">1</span>选择固件</div>
+        <label class="dropzone" id="drop">
+          <input type="file" id="file" accept=".bin" />
+          <div class="dropzone__inner">
+            <div class="dropzone__icon">⌁</div>
+            <p class="dropzone__headline">点击或拖入 .bin 固件</p>
+            <p class="muted">仅接受 .bin 文件</p>
+          </div>
+        </label>
+        <button id="useBundled" class="button button--ghost" hidden>使用最新内置固件</button>
+        <div class="firmware-pill"><span>当前固件</span><strong id="fwInfo">未选择固件</strong></div>
+      </div>
+    </div>
 
-  <div class="card">
-    <div class="step">③ 选择设备并刷写</div>
-    <p class="muted">设备重启进入升级模式后，点击下方按钮，在弹窗中选择设备端口开始刷写。</p>
-    <button id="flash" disabled>开始刷写</button>
-    <div id="bar"><div id="fill"></div></div>
-    <div id="pct" class="muted">0%</div>
-  </div>
+    <div class="panel">
+      <div class="panel__body">
+        <div class="step"><span class="step__no">2</span>进入升级模式</div>
+        <p class="muted">设备正常运行时，连接普通串口发送进入升级模式指令，设备会重启并重新枚举。<br>
+           若设备支持开机长按按键进入 bootloader，可跳过此步。</p>
+        <div class="actions"><button id="enter" class="button button--ghost">连接并进入升级模式</button></div>
+      </div>
+    </div>
 
-  <div class="card">
-    <div class="step">日志</div>
-    <div id="log"></div>
+    <div class="panel">
+      <div class="panel__body">
+        <div class="step"><span class="step__no">3</span>选择设备并刷写</div>
+        <p class="muted">设备进入升级模式后，点击下方按钮并在弹窗中选择设备端口开始刷写。</p>
+        <div class="actions"><button id="flash" class="button button--primary" disabled>开始刷写</button></div>
+        <div class="progress-track"><div id="fill" class="progress-fill"></div></div>
+        <div id="pct" class="pct">0%</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__body">
+        <div class="step"><span class="step__no">·</span>日志</div>
+        <div id="log" class="log-strip"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -67,10 +159,11 @@ const $ = (id) => document.getElementById(id);
 const logEl = $('log');
 let image = null;
 
-function log(msg, isErr = false) {
-  const line = document.createElement('div');
+function log(msg, level) {
+  const line = document.createElement('p');
+  line.className = 'log__line';
+  if (level) line.dataset.level = level;
   line.textContent = msg;
-  if (isErr) line.className = 'err';
   logEl.appendChild(line);
   logEl.scrollTop = logEl.scrollHeight;
 }
@@ -80,7 +173,7 @@ function setProgress(p) {
 }
 function setImage(bytes, name) {
   image = bytes;
-  $('fwInfo').textContent = `已选择：${name}（${bytes.length} 字节）`;
+  $('fwInfo').textContent = `${name}（${bytes.length} 字节）`;
   $('flash').disabled = false;
 }
 
@@ -91,42 +184,52 @@ if (!('serial' in navigator)) {
 
   $('file').addEventListener('change', async (e) => {
     const f = e.target.files[0];
-    if (!f) return;
-    setImage(new Uint8Array(await f.arrayBuffer()), f.name);
+    if (f) setImage(new Uint8Array(await f.arrayBuffer()), f.name);
   });
 
-  // 若同目录存在 firmware.bin（由部署流程附带），提供一键内置固件。
+  const drop = $('drop');
+  ['dragover', 'dragenter'].forEach((t) =>
+    drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('is-over'); }));
+  ['dragleave', 'drop'].forEach((t) =>
+    drop.addEventListener(t, () => drop.classList.remove('is-over')));
+  drop.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    const f = e.dataTransfer.files[0];
+    if (f) setImage(new Uint8Array(await f.arrayBuffer()), f.name);
+  });
+
+  // 同目录存在 firmware.bin 时提供一键内置固件。
   fetch('./firmware.bin', { method: 'HEAD' }).then((r) => {
-    if (r.ok) {
-      const btn = $('useBundled');
-      btn.hidden = false;
-      btn.addEventListener('click', async () => {
-        const buf = await (await fetch('./firmware.bin')).arrayBuffer();
-        setImage(new Uint8Array(buf), 'firmware.bin（内置）');
-      });
-    }
+    if (!r.ok) return;
+    const btn = $('useBundled');
+    btn.hidden = false;
+    btn.addEventListener('click', async () => {
+      const buf = await (await fetch('./firmware.bin')).arrayBuffer();
+      setImage(new Uint8Array(buf), 'firmware.bin（内置）');
+    });
   }).catch(() => {});
 
   $('enter').addEventListener('click', async () => {
     try {
       const port = await requestPort();
       await enterIap(port, log);
-      log('请等待几秒，设备重新枚举后再执行第 ③ 步。');
+      log('请等待几秒，设备重新枚举后再执行第 3 步。');
     } catch (e) {
-      if (e.name !== 'NotFoundError') log('进入升级模式失败：' + e.message, true);
+      if (e.name !== 'NotFoundError') log('进入升级模式失败：' + e.message, 'error');
     }
   });
 
   $('flash').addEventListener('click', async () => {
-    if (!image) { log('请先选择固件。', true); return; }
+    if (!image) { log('请先选择固件。', 'error'); return; }
     $('flash').disabled = true;
     setProgress(0);
     try {
       const port = await requestPort();
-      await flash(port, image, { log, onProgress: setProgress });
+      await flash(port, image, { log: (m) => log(m), onProgress: setProgress });
+      log('✓ 升级完成，设备已运行新固件。', 'success');
     } catch (e) {
       if (e.name === 'NotFoundError') log('已取消选择端口。');
-      else log('刷写失败：' + e.message, true);
+      else log('刷写失败：' + e.message, 'error');
     } finally {
       $('flash').disabled = false;
     }
