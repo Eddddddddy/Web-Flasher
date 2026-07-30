@@ -14,7 +14,9 @@ SolderingOS 的 SolderingPen 浏览器升级页面。它通过桌面 Chrome / Ed
 - 写入块：128 B
 - 最低 Bootloader：`0x0105`（IAP HELLO v2，带 product/board）
 
-网页发布清单不会接受 Plate、diagnostic、thermal-lab、combined 或 factory 镜像。自定义
+**公共仓库和 GitHub Pages 永远只发布 App-only 固件，不发布 `combined.bin`、factory
+全片镜像或任何 64 KiB 组合镜像。** 发布校验会同时按文件名、镜像长度和内嵌 App
+manifest 拒绝这些文件。网页发布清单也不会接受 Plate、diagnostic 或 thermal-lab 镜像。自定义
 `.bin` 仍可用于开发，但同样必须通过内嵌 Pen production App manifest；用户只能确认
 “该文件没有发布 SHA-256”，不能绕过产品身份检查。
 

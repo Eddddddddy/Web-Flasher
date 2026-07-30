@@ -14,6 +14,18 @@ export const RELEASE_MANIFEST_SCHEMA = 2;
 export const RELEASE_PRODUCT = 'soldering-pen';
 export const RELEASE_BOARD = 'pen_m030';
 export const RELEASE_PROFILE = 'production';
+export const FULL_FLASH_IMAGE_LENGTH = 0x10000;
+
+const FORBIDDEN_PUBLIC_IMAGE_NAME = /(?:^|[._-])(combined|factory)(?:[._-]|$)/i;
+
+export function assertPublicAppOnlyImage(file, size) {
+  if (FORBIDDEN_PUBLIC_IMAGE_NAME.test(file)) {
+    throw new Error(`公共仓库禁止发布 combined/factory 组合镜像：${file}`);
+  }
+  if (size === FULL_FLASH_IMAGE_LENGTH) {
+    throw new Error('公共仓库禁止发布 64 KiB 全片组合镜像');
+  }
+}
 
 function requireString(value, field) {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -56,6 +68,7 @@ export function validateReleaseDescriptor(input) {
   if (!/^[A-Za-z0-9._-]+\.bin$/.test(release.file)) {
     throw new Error(`固件文件名不安全或不是 .bin：${release.file}`);
   }
+  assertPublicAppOnlyImage(release.file, release.size);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(release.date)) {
     throw new Error(`发布日期格式无效：${release.date}`);
   }
@@ -113,6 +126,7 @@ export async function sha256Hex(bytes) {
 }
 
 export async function verifyReleaseBytes(bytes, release) {
+  assertPublicAppOnlyImage(release.file, bytes?.length ?? 0);
   if (!(bytes instanceof Uint8Array) || bytes.length !== release.size) {
     throw new Error(`固件大小不匹配：实际=${bytes?.length ?? 0}，清单=${release.size}`);
   }

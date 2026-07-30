@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  FULL_FLASH_IMAGE_LENGTH,
   parseReleaseManifest,
   sha256Hex,
   verifyReleaseBytes,
@@ -49,6 +50,24 @@ test('Plate or diagnostic images cannot enter the public Pen release manifest', 
   assert.throws(
     () => parseReleaseManifest({ schemaVersion: 2, versions: [validRelease({ profile: 'production-diag' })] }),
     /只接受 SolderingPen/,
+  );
+});
+
+test('combined and factory images can never enter the public release', async () => {
+  for (const file of ['solderingpen-v3.0-combined.bin', 'factory-solderingpen-v3.0.bin']) {
+    assert.throws(
+      () => parseReleaseManifest({ schemaVersion: 2, versions: [validRelease({ file })] }),
+      /禁止发布 combined\/factory 组合镜像/,
+    );
+  }
+
+  const fullFlash = new Uint8Array(FULL_FLASH_IMAGE_LENGTH);
+  await assert.rejects(
+    verifyReleaseBytes(fullFlash, validRelease({
+      size: fullFlash.length,
+      sha256: await sha256Hex(fullFlash),
+    })),
+    /禁止发布 64 KiB 全片组合镜像/,
   );
 });
 
