@@ -1,0 +1,10 @@
+{
+  "name": "solderingos-web-flasher",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "validate-release": "node scripts/validate-release.mjs",
+    "add-release": "node scripts/add-firmware-release.mjs"
+  }
+}

@@ -1,10 +1,24 @@
 {
+  "schemaVersion": 2,
   "versions": [
     {
-      "version": "2026.06.02",
-      "file": "firmware-2026.06.02.bin",
-      "date": "2026-06-02",
-      "notes": "App-only IAP image (ch32m030/build)"
+      "version": "3.0",
+      "file": "solderingpen-v3.0-iap-v2.bin",
+      "date": "2026-07-30",
+      "notes": "SolderingPen production App-only firmware; predictive thermal controller and finalized UI baseline.",
+      "product": "soldering-pen",
+      "board": "pen_m030",
+      "profile": "production",
+      "productId": 1,
+      "boardId": 1,
+      "profileId": 1,
+      "size": 57192,
+      "sha256": "16f7d4c98086911fd4edd881251adf5c6d9b0ab290c2a5146563040fb7e6ce38",
+      "appBase": 6144,
+      "appLength": 58240,
+      "progBlock": 128,
+      "minBootloader": 261,
+      "sourceRevision": "8f0356cbebb0c899d36358854ff0f8ec71493573"
     }
   ]
 }

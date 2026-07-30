@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>固件在线升级</title>
+<title>SolderingOS 固件在线升级</title>
 <style>
   :root {
     color-scheme: dark;
@@ -31,231 +31,670 @@
       linear-gradient(180deg, #0d1117 0%, #090c12 100%);
   }
   body::before {
-    content: ""; position: fixed; inset: 0; pointer-events: none;
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
     background-image:
       linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
     background-size: 28px 28px;
     mask-image: linear-gradient(180deg, rgba(255, 255, 255, 0.9), transparent 90%);
   }
-  .shell { position: relative; max-width: 760px; margin: 0 auto; padding: 28px 18px 40px;
-           display: grid; gap: 16px; }
+  .shell {
+    position: relative;
+    width: min(100%, 760px);
+    margin: 0 auto;
+    padding: 28px 18px 40px;
+    display: grid;
+    gap: 16px;
+  }
   #app:not([hidden]) { display: grid; gap: 16px; }
   .station-brand, .panel, .support-warning {
-    border: 1px solid var(--line); border-radius: 24px; background: var(--panel); box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
   }
   .station-brand {
     padding: 22px 24px;
     background: linear-gradient(145deg, rgba(255, 183, 3, 0.1), rgba(255, 255, 255, 0.02)), var(--panel-strong);
   }
-  .station-eyebrow { margin: 0 0 8px; font-size: 12px; text-transform: uppercase;
-                     letter-spacing: 0.2em; color: var(--accent); }
-  .station-brand h1 { margin: 0; font-size: clamp(28px, 4vw, 40px); line-height: 0.98; letter-spacing: -0.04em; }
-  .station-brand p { margin: 10px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
-  .panel__body { padding: 18px 20px; display: grid; gap: 12px; }
-  .step { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -0.02em; }
-  .step__no { width: 26px; height: 26px; border-radius: 9px; display: grid; place-items: center;
-              font-size: 13px; color: #101417; background: linear-gradient(135deg, var(--accent), var(--accent-strong)); }
-  .muted { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0; }
-  .dropzone {
-    padding: 22px; border: 1px dashed rgba(255, 183, 3, 0.42); border-radius: 20px;
-    background: linear-gradient(180deg, rgba(255, 183, 3, 0.12), rgba(255, 255, 255, 0.03)), rgba(255, 255, 255, 0.02);
-    display: grid; place-items: center; text-align: center; cursor: pointer;
-    transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+  .station-eyebrow {
+    margin: 0 0 8px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--accent);
   }
-  .dropzone:hover, .dropzone.is-over { transform: translateY(-2px); border-color: rgba(255, 183, 3, 0.8); }
-  .dropzone__icon { width: 64px; height: 64px; margin: 0 auto 10px; border-radius: 22px; display: grid;
-                    place-items: center; border: 1px solid rgba(255, 183, 3, 0.3); background: rgba(255, 183, 3, 0.08);
-                    font-family: "IBM Plex Mono", monospace; font-size: 26px; color: var(--accent); }
-  .dropzone__headline { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.03em; }
-  .firmware-pill { border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; background: rgba(255, 255, 255, 0.03); }
-  .firmware-pill span { display: block; margin-bottom: 6px; color: var(--muted); font-size: 11px;
-                        text-transform: uppercase; letter-spacing: 0.16em; }
-  .firmware-pill strong { display: block; font-family: "IBM Plex Mono", monospace; font-size: 13px; word-break: break-all; }
-  .firmware-select { display: grid; gap: 8px; }
+  .station-brand h1 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .station-brand p { margin: 10px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .panel__body { padding: 20px; display: grid; gap: 16px; }
+  .firmware-brief {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .section-label {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+  .firmware-brief strong { display: block; font-size: 19px; line-height: 1.35; letter-spacing: -0.02em; }
+  .firmware-brief small { display: block; margin-top: 6px; color: var(--success); font-size: 12px; line-height: 1.5; }
+  .product-mark {
+    flex: 0 0 auto;
+    padding: 7px 10px;
+    border: 1px solid rgba(255, 183, 3, 0.28);
+    border-radius: 10px;
+    color: #ffd26a;
+    background: rgba(255, 183, 3, 0.07);
+    font-size: 12px;
+    font-weight: 750;
+  }
+  .flow-status {
+    display: grid;
+    grid-template-columns: 13px 1fr;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.025);
+  }
+  .status-dot {
+    width: 11px;
+    height: 11px;
+    margin-top: 5px;
+    border-radius: 50%;
+    background: var(--muted);
+    box-shadow: 0 0 0 5px rgba(154, 166, 184, 0.08);
+  }
+  .flow-status[data-state="waiting"] .status-dot {
+    background: var(--accent);
+    box-shadow: 0 0 0 5px rgba(255, 183, 3, 0.1);
+    animation: breathe 1.4s ease-in-out infinite;
+  }
+  .flow-status[data-state="success"] { border-color: rgba(39, 213, 154, 0.28); }
+  .flow-status[data-state="success"] .status-dot {
+    background: var(--success);
+    box-shadow: 0 0 0 5px rgba(39, 213, 154, 0.1);
+  }
+  .flow-status[data-state="error"] { border-color: rgba(255, 100, 124, 0.3); }
+  .flow-status[data-state="error"] .status-dot {
+    background: var(--danger);
+    box-shadow: 0 0 0 5px rgba(255, 100, 124, 0.1);
+  }
+  .flow-status strong { display: block; font-size: 17px; line-height: 1.35; }
+  .flow-status p { margin: 5px 0 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+  .flow-status small { display: block; margin-top: 7px; color: #6af0c5; font-size: 12px; line-height: 1.45; }
+  .stages {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 7px;
+    margin: 2px 0;
+  }
+  .stage {
+    position: relative;
+    padding-top: 16px;
+    color: #687587;
+    text-align: center;
+    font-size: 11px;
+    line-height: 1.3;
+  }
+  .stage::before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    width: 7px;
+    height: 7px;
+    margin-left: -3.5px;
+    border-radius: 50%;
+    background: #3a4655;
+    z-index: 1;
+  }
+  .stage:not(:first-child)::after {
+    content: "";
+    position: absolute;
+    top: 7px;
+    right: 50%;
+    width: calc(100% + 7px);
+    height: 1px;
+    background: #2e3946;
+  }
+  .stage.is-active { color: #ffe2a1; }
+  .stage.is-active::before { background: var(--accent); box-shadow: 0 0 0 4px rgba(255, 183, 3, 0.1); }
+  .stage.is-complete { color: #75d9bb; }
+  .stage.is-complete::before, .stage.is-complete::after { background: var(--success); }
+  .stage.is-error { color: #ff9bac; }
+  .stage.is-error::before { background: var(--danger); }
+  .progress-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
+  .progress-track {
+    position: relative;
+    height: 13px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+  }
+  .progress-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+    transition: width 180ms ease;
+  }
+  .pct { min-width: 44px; color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 12px; text-align: right; }
+  .button {
+    appearance: none;
+    border: 0;
+    min-height: 50px;
+    padding: 14px 20px;
+    border-radius: 15px;
+    font: inherit;
+    cursor: pointer;
+    transition: transform 160ms ease, opacity 160ms ease, filter 160ms ease;
+  }
+  .button:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.04); }
+  .button:disabled { opacity: 0.48; cursor: not-allowed; }
+  .button--primary {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    color: #101417;
+    font-weight: 850;
+  }
+  details { min-width: 0; }
+  details > summary {
+    list-style: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after { content: "＋"; float: right; color: #738094; }
+  details[open] > summary::after { content: "－"; }
+  .advanced {
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  .advanced-content { display: grid; gap: 12px; padding-top: 14px; }
+  .firmware-controls { min-width: 0; margin: 0; padding: 0; border: 0; display: grid; gap: 12px; }
+  .firmware-controls:disabled { opacity: 0.55; }
+  .firmware-select { display: grid; gap: 7px; }
   .firmware-select span { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; }
-  .firmware-select select { width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line);
-                            background: rgba(255, 255, 255, 0.03); color: var(--text); font: inherit; }
-  .actions { display: flex; gap: 12px; flex-wrap: wrap; }
-  .button { appearance: none; border: 0; padding: 13px 18px; border-radius: 14px; font: inherit; cursor: pointer;
-            transition: transform 160ms ease, opacity 160ms ease; }
-  .button:hover:not(:disabled) { transform: translateY(-1px); }
-  .button:disabled { opacity: 0.46; cursor: not-allowed; }
-  .button--primary { background: linear-gradient(135deg, var(--accent), var(--accent-strong)); color: #101417; font-weight: 800; }
-  .button--ghost { background: rgba(255, 255, 255, 0.06); color: var(--text); border: 1px solid var(--line); }
-  .progress-track { position: relative; height: 20px; border-radius: 999px; overflow: hidden;
-                    background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); }
-  .progress-fill { position: absolute; inset: 0 auto 0 0; width: 0%; border-radius: inherit;
-                   background: linear-gradient(90deg, var(--accent), var(--accent-strong)); transition: width 180ms ease; }
-  .pct { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 13px; }
-  .log-strip { max-height: 240px; padding: 12px 14px; border-radius: 18px; border: 1px solid var(--line);
-               background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)), #090d12;
-               font-family: "IBM Plex Mono", monospace; font-size: 12px; line-height: 1.55; overflow-y: auto; }
+  .firmware-select select {
+    width: 100%;
+    padding: 11px 13px;
+    border-radius: 13px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text);
+    font: inherit;
+  }
+  .dropzone {
+    padding: 14px;
+    border: 1px dashed rgba(255, 183, 3, 0.38);
+    border-radius: 14px;
+    background: rgba(255, 183, 3, 0.045);
+    color: #f0d59a;
+    text-align: center;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .dropzone:hover, .dropzone.is-over { border-color: rgba(255, 183, 3, 0.8); background: rgba(255, 183, 3, 0.08); }
+  .technical { margin: 0; color: #768397; font-family: "IBM Plex Mono", monospace; font-size: 11px; line-height: 1.5; word-break: break-all; }
+  .custom-warning {
+    padding: 12px 13px;
+    border: 1px solid rgba(255, 183, 3, 0.35);
+    border-radius: 14px;
+    background: rgba(255, 183, 3, 0.08);
+    color: #ffe2a1;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .custom-warning label { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; }
+  .custom-warning input { margin-top: 3px; }
+  .log-details > summary { padding: 16px 20px; color: var(--text); font-weight: 750; }
+  .log-details[open] > summary { border-bottom: 1px solid var(--line); }
+  .log-wrap { padding: 16px 20px 20px; }
+  .log-strip {
+    max-height: 260px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)), #090d12;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    line-height: 1.55;
+    overflow-y: auto;
+  }
   .log__line { margin: 0; white-space: pre-wrap; }
   .log__line + .log__line { margin-top: 4px; }
   .log__line[data-level="success"] { color: #6af0c5; }
   .log__line[data-level="error"] { color: #ff8f9f; }
-  .support-warning { padding: 16px 18px; background: rgba(255, 93, 115, 0.08);
-                     border-color: rgba(255, 93, 115, 0.22); color: #ffc5d0; line-height: 1.6; }
+  .support-warning {
+    padding: 16px 18px;
+    background: rgba(255, 93, 115, 0.08);
+    border-color: rgba(255, 93, 115, 0.22);
+    color: #ffc5d0;
+    line-height: 1.6;
+  }
   input[type="file"] { display: none; }
+  [hidden] { display: none !important; }
+  @keyframes breathe { 50% { opacity: 0.45; transform: scale(0.82); } }
+  @media (max-width: 560px) {
+    .shell { padding: 14px 12px 28px; gap: 12px; }
+    .station-brand, .panel, .support-warning { border-radius: 19px; }
+    .station-brand { padding: 19px 18px; }
+    .panel__body { padding: 17px; }
+    .firmware-brief { gap: 12px; }
+    .firmware-brief strong { font-size: 17px; }
+    .product-mark { display: none; }
+    .stage { font-size: 10px; }
+    .stage:not(:first-child)::after { width: calc(100% + 4px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
 <div class="shell">
   <header class="station-brand">
     <p class="station-eyebrow">Firmware OTA</p>
-    <h1>烙铁固件在线升级</h1>
-    <p>桌面版 Chrome / Edge · 用数据线连接设备即可在浏览器内升级。Safari、Firefox、iOS 不支持。</p>
+    <h1>SolderingOS 固件在线升级</h1>
+    <p>桌面版 Chrome / Edge · 连接设备后，网页会自动完成核对与升级。</p>
   </header>
 
   <div id="unsupported" class="support-warning" hidden>
     当前浏览器不支持 Web Serial API，无法升级。请改用桌面版 Chrome 或 Edge。
   </div>
 
-  <div id="app" hidden>
-    <div class="panel">
+  <main id="app" hidden>
+    <section class="panel" aria-labelledby="upgradeTitle">
       <div class="panel__body">
-        <div class="step"><span class="step__no">1</span>选择固件</div>
-        <div class="firmware-select" id="fwSelectWrap" hidden>
-          <span>固件版本</span>
-          <select id="fwSelect"></select>
-        </div>
-        <label class="dropzone" id="drop">
-          <input type="file" id="file" accept=".bin" />
-          <div class="dropzone__inner">
-            <div class="dropzone__icon">⌁</div>
-            <p class="dropzone__headline">点击或拖入自定义 .bin</p>
-            <p class="muted">默认加载上方最新固件，也可拖入自有固件</p>
+        <div class="firmware-brief">
+          <div>
+            <span class="section-label" id="upgradeTitle">当前固件</span>
+            <strong id="fwInfo">正在加载最新正式固件…</strong>
+            <small id="fwTrust">正在验证发布身份与文件指纹</small>
           </div>
-        </label>
-        <div class="firmware-pill"><span>当前固件</span><strong id="fwInfo">未选择固件</strong></div>
-      </div>
-    </div>
+          <span class="product-mark">SolderingPen</span>
+        </div>
 
-    <div class="panel">
-      <div class="panel__body">
-        <div class="step"><span class="step__no">2</span>进入升级模式</div>
-        <p class="muted">设备正常运行时，连接普通串口发送进入升级模式指令，设备会重启并重新枚举。<br>
-           若设备支持开机长按按键进入 bootloader，可跳过此步。</p>
-        <div class="actions"><button id="enter" class="button button--ghost">连接并进入升级模式</button></div>
-      </div>
-    </div>
+        <div id="flowStatus" class="flow-status" data-state="waiting" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <div>
+            <strong id="statusTitle">正在准备固件</strong>
+            <p id="statusMessage">网页正在加载并验证最新正式固件。</p>
+            <small id="statusDetail" hidden></small>
+          </div>
+        </div>
 
-    <div class="panel">
-      <div class="panel__body">
-        <div class="step"><span class="step__no">3</span>选择设备并刷写</div>
-        <p class="muted">设备进入升级模式后，点击下方按钮并在弹窗中选择设备端口开始刷写。</p>
-        <div class="actions"><button id="flash" class="button button--primary" disabled>开始刷写</button></div>
-        <div class="progress-track"><div id="fill" class="progress-fill"></div></div>
-        <div id="pct" class="pct">0%</div>
-      </div>
-    </div>
+        <div class="stages" aria-label="升级进度">
+          <div class="stage" data-stage="0">连接设备</div>
+          <div class="stage" data-stage="1">升级模式</div>
+          <div class="stage" data-stage="2">核对设备</div>
+          <div class="stage" data-stage="3">写入固件</div>
+          <div class="stage" data-stage="4">完成</div>
+        </div>
 
-    <div class="panel">
-      <div class="panel__body">
-        <div class="step"><span class="step__no">·</span>日志</div>
-        <div id="log" class="log-strip"></div>
+        <div class="progress-row">
+          <div class="progress-track" aria-hidden="true"><div id="fill" class="progress-fill"></div></div>
+          <div id="pct" class="pct">0%</div>
+        </div>
+
+        <button id="upgradeAction" class="button button--primary" disabled>正在准备固件…</button>
+        <details id="advanced" class="advanced">
+          <summary>高级选项：其他固件</summary>
+          <div class="advanced-content">
+            <fieldset id="firmwareControls" class="firmware-controls">
+              <div class="firmware-select" id="fwSelectWrap" hidden>
+                <span>历史正式版本</span>
+                <select id="fwSelect"></select>
+              </div>
+              <label class="dropzone" id="drop">
+                <input type="file" id="file" accept=".bin" />
+                选择或拖入自定义 .bin 固件
+              </label>
+              <p id="fwTechnical" class="technical">尚未加载固件文件</p>
+              <div id="customWarning" class="custom-warning" hidden>
+                <label>
+                  <input id="customAck" type="checkbox" />
+                  <span>网页已验证该文件为 <b>SolderingPen / pen_m030 / production</b>；我接受自定义文件没有发布 SHA-256 保护的风险。</span>
+                </label>
+              </div>
+            </fieldset>
+          </div>
+        </details>
       </div>
-    </div>
-  </div>
+    </section>
+
+    <details id="logDetails" class="panel log-details">
+      <summary>查看详细日志</summary>
+      <div class="log-wrap"><div id="log" class="log-strip"></div></div>
+    </details>
+  </main>
 </div>
 
 <script type="module">
-import { requestPort, enterIap, flash } from './iap.js';
+import {
+  requestPort,
+  enterIap,
+  probeIapPort,
+  waitForAuthorizedIap,
+  flash,
+  parseAppManifest,
+} from './iap.js';
+import { parseReleaseManifest, verifyReleaseBytes } from './firmware.js';
 
 const $ = (id) => document.getElementById(id);
 const logEl = $('log');
-let image = null;
+const FLOW_VIEWS = Object.freeze({
+  loading: {
+    title: '正在准备固件', message: '网页正在加载并验证最新正式固件。',
+    button: '正在准备固件…', disabled: true, stage: -1, visual: 'waiting',
+  },
+  ready: {
+    title: '准备就绪', message: '连接设备后，网页将自动进入升级模式、核对设备并完成烧录。',
+    button: '连接设备并开始升级', disabled: false, stage: 0, visual: 'success',
+  },
+  selecting: {
+    title: '选择设备', message: '请在浏览器窗口中选择 SolderingPen 串口。',
+    button: '等待选择设备…', disabled: true, stage: 0, visual: 'waiting',
+  },
+  probing: {
+    title: '正在识别设备', message: '网页正在判断设备当前处于正常模式还是升级模式。',
+    button: '正在识别设备…', disabled: true, stage: 0, visual: 'waiting',
+  },
+  entering: {
+    title: '正在进入升级模式', message: '设备会重启并进入升级模式，请保持连接。',
+    button: '正在进入升级模式…', disabled: true, stage: 1, visual: 'waiting',
+  },
+  waitingIap: {
+    title: '等待升级设备', message: '正在等待设备重新连接并自动核对升级协议。',
+    button: '正在等待设备…', disabled: true, stage: 1, visual: 'waiting',
+  },
+  needPermission: {
+    title: '需要再次选择设备', message: '浏览器未继承升级设备权限。请选择重新出现的 Pen IAP。',
+    button: '选择升级设备并继续', disabled: false, stage: 1, visual: 'waiting',
+  },
+  verifying: {
+    title: '正在核对设备', message: '网页正在核对设备型号、Bootloader 版本与固件兼容性。',
+    button: '正在核对设备…', disabled: true, stage: 2, visual: 'waiting',
+  },
+  flashing: {
+    title: '正在升级', message: '正在写入固件，请勿断开设备或关闭页面。',
+    button: '正在升级 0%', disabled: true, stage: 3, visual: 'waiting',
+  },
+  done: {
+    title: '升级完成', message: '固件已通过验证，设备正在重新启动。',
+    button: '再次升级', disabled: false, stage: 4, visual: 'success',
+  },
+  error: {
+    title: '升级未完成', message: '请查看提示后重试。',
+    button: '重试升级', disabled: false, stage: null, visual: 'error',
+  },
+});
 
-function log(msg, level) {
+let image = null;
+let activeRelease = null;
+let imageLoadToken = 0;
+let flowState = 'loading';
+let currentStage = -1;
+
+function log(message, level) {
   const line = document.createElement('p');
   line.className = 'log__line';
   if (level) line.dataset.level = level;
-  line.textContent = msg;
+  line.textContent = message;
   logEl.appendChild(line);
   logEl.scrollTop = logEl.scrollHeight;
+  if (level === 'error') $('logDetails').open = true;
 }
-function setProgress(p) {
-  $('fill').style.width = `${(p * 100).toFixed(1)}%`;
-  $('pct').textContent = `${(p * 100).toFixed(1)}%`;
+
+function canUseImage() {
+  return Boolean(image?.length && (activeRelease || $('customAck').checked));
 }
-function setImage(bytes, name) {
+
+function renderStages(stage, state) {
+  document.querySelectorAll('.stage').forEach((element) => {
+    const index = Number(element.dataset.stage);
+    element.classList.toggle('is-complete', state === 'done' || (stage >= 0 && index < stage));
+    element.classList.toggle('is-active', state !== 'done' && state !== 'error' && index === stage);
+    element.classList.toggle('is-error', state === 'error' && index === stage);
+  });
+}
+
+function refreshAction() {
+  const view = FLOW_VIEWS[flowState];
+  const action = $('upgradeAction');
+  action.textContent = view.button;
+  const needsImage = ['ready', 'needPermission', 'done', 'error'].includes(flowState);
+  action.disabled = view.disabled || (needsImage && !canUseImage());
+  $('firmwareControls').disabled = !['ready', 'done', 'error'].includes(flowState);
+}
+
+function setFlowState(state, { message, detail } = {}) {
+  const view = FLOW_VIEWS[state];
+  flowState = state;
+  if (view.stage !== null) currentStage = view.stage;
+  $('flowStatus').dataset.state = view.visual;
+  $('statusTitle').textContent = view.title;
+  $('statusMessage').textContent = message || view.message;
+  $('statusDetail').textContent = detail || '';
+  $('statusDetail').hidden = !detail;
+  renderStages(currentStage, state);
+  refreshAction();
+}
+
+function setProgress(value) {
+  const bounded = Math.max(0, Math.min(1, value));
+  const percent = (bounded * 100).toFixed(1);
+  $('fill').style.width = `${percent}%`;
+  $('pct').textContent = `${percent}%`;
+  if (flowState === 'flashing') $('upgradeAction').textContent = `正在升级 ${Math.round(bounded * 100)}%`;
+}
+
+function setImage(bytes, name, release = null) {
+  const embedded = parseAppManifest(bytes);
+  if (embedded.productId !== 1 || embedded.boardId !== 1 || embedded.profileId !== 1) {
+    throw new Error(
+      `文件内嵌身份为 ${embedded.productId}/${embedded.boardId}/${embedded.profileId}，` +
+      '网页只接受 SolderingPen / pen_m030 / production',
+    );
+  }
   image = bytes;
-  $('fwInfo').textContent = `${name}（${bytes.length} 字节）`;
-  $('flash').disabled = false;
+  activeRelease = release;
+  $('fwInfo').textContent = release
+    ? `SolderingOS ${release.version} · SolderingPen 正式版`
+    : `自定义固件 · ${name}`;
+  $('fwTrust').textContent = release
+    ? `已验证设备型号和 SHA-256 · ${bytes.length.toLocaleString('zh-CN')} 字节`
+    : '已验证设备型号 · 自定义文件未经过发布 SHA-256 校验';
+  $('fwTrust').style.color = release ? 'var(--success)' : 'var(--accent)';
+  $('fwTechnical').textContent = `${name} · ${bytes.length} B`;
+  $('customWarning').hidden = Boolean(release);
+  $('customAck').checked = false;
+  if (!release && $('fwSelect').options.length) $('fwSelect').selectedIndex = -1;
+  setFlowState('ready');
+}
+
+function rejectImage(prefix, error) {
+  image = null;
+  activeRelease = null;
+  setFlowState('error', { message: `${prefix}：${error.message}` });
+  $('advanced').open = true;
+  log(`${prefix}：${error.message}`, 'error');
+}
+
+async function loadCustomFile(file) {
+  const token = ++imageLoadToken;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (token !== imageLoadToken) return;
+  try {
+    setImage(bytes, file.name);
+    log(`自定义固件 ${file.name} 的 Pen production 身份校验通过。`, 'success');
+  } catch (error) {
+    rejectImage('拒绝自定义固件', error);
+  }
+}
+
+async function programIap(port, info) {
+  setProgress(0);
+  setFlowState('verifying', {
+    detail: `设备已进入升级模式：协议 ${info.protoVer}，Bootloader 0x${info.blVer.toString(16).padStart(4, '0')}`,
+  });
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  await flash(port, image, {
+    release: activeRelease,
+    log: (message) => {
+      log(message);
+      if (message.startsWith('擦除 ')) setFlowState('flashing');
+    },
+    onProgress: (value) => {
+      if (flowState !== 'flashing') setFlowState('flashing');
+      setProgress(value);
+    },
+  });
+  setProgress(1);
+  setFlowState('done');
+  log('✓ Bootloader 已验证镜像并接受复位；升级完成。', 'success');
+}
+
+async function runUpgrade(selectedPortPromise, expectIap) {
+  const returnState = expectIap ? 'needPermission' : 'ready';
+  setFlowState('selecting');
+  try {
+    const port = await selectedPortPromise;
+    if (expectIap) {
+      setFlowState('verifying');
+      const info = await probeIapPort(port, { timeoutMs: 2500 });
+      await programIap(port, info);
+      return;
+    }
+
+    setFlowState('probing');
+    try {
+      const info = await probeIapPort(port, { timeoutMs: 800 });
+      log('检测到设备已经处于升级模式。', 'success');
+      await programIap(port, info);
+      return;
+    } catch (error) {
+      if (error.iapHelloReceived) throw error;
+      log('当前端口未返回 IAP HELLO，将按正常运行的 App 处理。');
+    }
+
+    setFlowState('entering');
+    await enterIap(port, log);
+    setFlowState('waitingIap');
+    const detected = await waitForAuthorizedIap({ log });
+    if (!detected) {
+      setFlowState('needPermission');
+      log('浏览器未继承 IAP 串口权限，需要再次选择 Pen IAP。');
+      return;
+    }
+    log('IAP 已自动发现并通过协议与产品身份校验。', 'success');
+    await programIap(detected.port, detected.info);
+  } catch (error) {
+    if (error.name === 'NotFoundError') {
+      setFlowState(returnState);
+      log('已取消选择设备。');
+      return;
+    }
+    setFlowState('error', { message: error.message });
+    log(`升级失败：${error.message}`, 'error');
+  }
 }
 
 if (!('serial' in navigator)) {
   $('unsupported').hidden = false;
 } else {
   $('app').hidden = false;
+  setFlowState('loading');
 
-  $('file').addEventListener('change', async (e) => {
-    const f = e.target.files[0];
-    if (f) setImage(new Uint8Array(await f.arrayBuffer()), f.name);
+  $('customAck').addEventListener('change', refreshAction);
+  $('file').addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (file) await loadCustomFile(file);
   });
 
   const drop = $('drop');
-  ['dragover', 'dragenter'].forEach((t) =>
-    drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('is-over'); }));
-  ['dragleave', 'drop'].forEach((t) =>
-    drop.addEventListener(t, () => drop.classList.remove('is-over')));
-  drop.addEventListener('drop', async (e) => {
-    e.preventDefault();
-    const f = e.dataTransfer.files[0];
-    if (f) setImage(new Uint8Array(await f.arrayBuffer()), f.name);
+  ['dragover', 'dragenter'].forEach((type) =>
+    drop.addEventListener(type, (event) => {
+      event.preventDefault();
+      if (!$('firmwareControls').disabled) drop.classList.add('is-over');
+    }));
+  ['dragleave', 'drop'].forEach((type) =>
+    drop.addEventListener(type, () => drop.classList.remove('is-over')));
+  drop.addEventListener('drop', async (event) => {
+    event.preventDefault();
+    if ($('firmwareControls').disabled) return;
+    const file = event.dataTransfer.files[0];
+    if (file) await loadCustomFile(file);
   });
 
-  // 从 firmware/manifest.json 加载版本列表，自动选中并加载最新固件（数组首项=最新）。
   (async () => {
     try {
-      const r = await fetch('./firmware/manifest.json', { cache: 'no-store' });
-      if (!r.ok) return;
-      const versions = (await r.json()).versions || [];
-      if (!versions.length) return;
-      const sel = $('fwSelect');
-      versions.forEach((v, i) => {
-        const o = document.createElement('option');
-        o.value = v.file;
-        o.dataset.label = v.version;
-        o.textContent = v.version + (i === 0 ? ' (最新)' : '') + (v.date ? ' · ' + v.date : '');
-        sel.appendChild(o);
+      const response = await fetch('./firmware/manifest.json', { cache: 'no-store' });
+      if (!response.ok) throw new Error(`发布清单 HTTP ${response.status}`);
+      const manifest = parseReleaseManifest(await response.json());
+      const versions = manifest.versions;
+      const select = $('fwSelect');
+      versions.forEach((release, index) => {
+        const option = document.createElement('option');
+        option.value = String(index);
+        option.textContent = `SolderingOS ${release.version}` + (index === 0 ? '（最新）' : '') + ` · ${release.date}`;
+        select.appendChild(option);
       });
       $('fwSelectWrap').hidden = false;
-      const load = async (o) => {
-        log('加载固件 ' + o.dataset.label + ' …');
-        const buf = await (await fetch('./firmware/' + o.value, { cache: 'no-store' })).arrayBuffer();
-        setImage(new Uint8Array(buf), o.dataset.label + '（' + o.value + '）');
+
+      const loadRelease = async (option) => {
+        const token = ++imageLoadToken;
+        const release = versions[Number(option.value)];
+        image = null;
+        activeRelease = null;
+        setFlowState('loading', { message: `正在下载并验证 SolderingOS ${release.version}。` });
+        log(`加载并校验 SolderingOS ${release.version} …`);
+        const imageResponse = await fetch(`./firmware/${release.file}`, { cache: 'no-store' });
+        if (!imageResponse.ok) throw new Error(`固件下载 HTTP ${imageResponse.status}`);
+        const bytes = new Uint8Array(await imageResponse.arrayBuffer());
+        await verifyReleaseBytes(bytes, release);
+        if (token !== imageLoadToken) return;
+        setImage(bytes, release.file, release);
+        log(`发布固件校验通过：${release.size} B，SHA-256 ${release.sha256}`, 'success');
       };
-      sel.addEventListener('change', () => load(sel.selectedOptions[0]));
-      await load(sel.options[0]);
-    } catch {}
+
+      select.addEventListener('change', async () => {
+        try { await loadRelease(select.selectedOptions[0]); }
+        catch (error) { rejectImage('固件加载失败', error); }
+      });
+      await loadRelease(select.options[0]);
+    } catch (error) {
+      rejectImage('发布固件不可用', error);
+    }
   })();
 
-  $('enter').addEventListener('click', async () => {
-    try {
-      const port = await requestPort();
-      await enterIap(port, log);
-      log('请等待几秒，设备重新枚举后再执行第 3 步。');
-    } catch (e) {
-      if (e.name !== 'NotFoundError') log('进入升级模式失败：' + e.message, 'error');
-    }
-  });
-
-  $('flash').addEventListener('click', async () => {
-    if (!image) { log('请先选择固件。', 'error'); return; }
-    $('flash').disabled = true;
-    setProgress(0);
-    try {
-      const port = await requestPort();
-      await flash(port, image, { log: (m) => log(m), onProgress: setProgress });
-      log('✓ 升级完成，设备已运行新固件。', 'success');
-    } catch (e) {
-      if (e.name === 'NotFoundError') log('已取消选择端口。');
-      else log('刷写失败：' + e.message, 'error');
-    } finally {
-      $('flash').disabled = false;
-    }
+  $('upgradeAction').addEventListener('click', async () => {
+    if (!canUseImage()) return;
+    // requestPort 必须在点击事件中立即调用，浏览器才允许显示串口选择窗口。
+    const selectedPort = requestPort();
+    const expectIap = flowState === 'needPermission';
+    await runUpgrade(selectedPort, expectIap);
   });
 }
 </script>
